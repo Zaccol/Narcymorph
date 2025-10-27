@@ -1,0 +1,138 @@
+// Narcymorph Database Schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User Model
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  username  String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  // Relations
+  profile      Profile?
+  messages     Message[]
+  friendships1 Friendship[] @relation("UserFriendships1")
+  friendships2 Friendship[] @relation("UserFriendships2")
+
+  @@map("users")
+}
+
+// Profile Model
+model Profile {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Photo
+  photoUrl    String?
+  photoUploadedAt DateTime?
+
+  // Questionnaire responses (stored as JSON)
+  quizResponses Json?
+  quizCompletedAt DateTime?
+
+  // Personality Analysis
+  personalityType        String? // "INTJ", "ENFP", etc.
+  personalityTitle       String? // "The Architect", etc.
+  personalitySummary     String? @db.Text
+  personalityAnalysis    String? @db.Text
+  dominantTraits         Json?   // Array of traits
+  strengths              Json?   // Array of strengths
+  growthAreas            Json?   // Array of growth areas
+  coreValues             Json?   // Array of values
+  communicationStyle     String? @db.Text
+  relationshipPreferences String? @db.Text
+
+  // Scores
+  extraversionScore Int? // 0-30
+  intuitionScore    Int? // 0-30
+  thinkingScore     Int? // 0-25
+  judgingScore      Int? // 0-25
+  emotionalIntelligenceScore Int? // 0-15
+  assertivenessScore Int? // 0-5
+
+  // Completion tracking
+  completionPercentage Int @default(0)
+  lastAnalyzedAt       DateTime?
+
+  // Relations
+  associations Association[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("profiles")
+}
+
+// Association Model (for cultural associations)
+model Association {
+  id        String @id @default(uuid())
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  // Type of association
+  category    String // "animal", "color", "element", "anime", etc.
+  subcategory String? // "naruto", "demon-slayer", "harry-potter", etc.
+
+  // Result
+  result      String // "Wolf", "Blue", "Fire", "Naruto Uzumaki", etc.
+  confidence  Int // 0-100
+  explanation String @db.Text
+  metadata    Json? // Additional data (emoji, hex color, quotes, etc.)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("associations")
+  @@index([profileId])
+  @@index([category])
+}
+
+// Message Model (for AI chat)
+model Message {
+  id      String @id @default(uuid())
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  content String @db.Text
+  role    String // "user" or "assistant"
+  context Json? // Conversation context
+
+  createdAt DateTime @default(now())
+
+  @@map("messages")
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// Friendship Model
+model Friendship {
+  id     String @id @default(uuid())
+
+  user1Id String
+  user1   User   @relation("UserFriendships1", fields: [user1Id], references: [id], onDelete: Cascade)
+
+  user2Id String
+  user2   User   @relation("UserFriendships2", fields: [user2Id], references: [id], onDelete: Cascade)
+
+  status    String   @default("pending") // "pending", "accepted", "rejected"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([user1Id, user2Id])
+  @@map("friendships")
+  @@index([user1Id])
+  @@index([user2Id])
+  @@index([status])
+}
