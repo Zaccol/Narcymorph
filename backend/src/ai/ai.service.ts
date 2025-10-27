@@ -1,16 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import OpenAI from 'openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 @Injectable()
 export class AiService {
-  private openai: OpenAI;
+  private genAI: GoogleGenerativeAI;
+  private model: any;
   private readonly logger = new Logger(AiService.name);
 
   constructor(private configService: ConfigService) {
-    this.openai = new OpenAI({
-      apiKey: this.configService.get<string>('OPENAI_API_KEY'),
-    });
+    const apiKey = this.configService.get<string>('GEMINI_API_KEY');
+    this.genAI = new GoogleGenerativeAI(apiKey);
+    this.model = this.genAI.getGenerativeModel({ model: 'gemini-pro' });
   }
 
   async analyzePersonality(data: {
@@ -32,7 +33,7 @@ DONNÉES DU PROFIL:
 
 Crée un profil psychologique complet et nuancé.
 
-Réponds UNIQUEMENT en JSON avec cette structure:
+Réponds UNIQUEMENT en JSON valide avec cette structure exacte:
 {
   "personalityType": "${data.personalityType}",
   "title": "Le [Surnom du type]",
@@ -50,21 +51,46 @@ Réponds UNIQUEMENT en JSON avec cette structure:
   "coreValues": ["Valeur1", "Valeur2"],
   "communicationStyle": "Description",
   "relationshipPreferences": "Description"
-}`;
+}
+
+IMPORTANT: Réponds UNIQUEMENT avec le JSON, sans texte avant ou après.`;
 
     try {
-      const completion = await this.openai.chat.completions.create({
-        model: this.configService.get<string>('OPENAI_MODEL', 'gpt-4-turbo-preview'),
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.7,
-        response_format: { type: 'json_object' },
-      });
+      const result = await this.model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
 
-      const result = JSON.parse(completion.choices[0].message.content);
-      return result;
+      // Nettoyer le texte pour extraire le JSON
+      let jsonText = text.trim();
+
+      // Enlever les balises markdown si présentes
+      jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+
+      // Parser le JSON
+      const parsed = JSON.parse(jsonText);
+      return parsed;
     } catch (error) {
-      this.logger.error('Error analyzing personality:', error);
-      throw error;
+      this.logger.error('Error analyzing personality with Gemini:', error);
+
+      // Fallback en cas d'erreur
+      return {
+        personalityType: data.personalityType,
+        title: 'Profil en Cours d\'Analyse',
+        summary: 'Votre analyse de personnalité est en cours de traitement.',
+        detailedAnalysis: 'Nous analysons vos réponses pour créer votre profil personnalisé.',
+        dominantTraits: [
+          { name: 'En cours...', score: 50, description: 'Analyse en cours' }
+        ],
+        strengths: [
+          { name: 'À venir', description: 'Analyse en cours' }
+        ],
+        growthAreas: [
+          { area: 'À venir', suggestion: 'Analyse en cours' }
+        ],
+        coreValues: ['Authenticité', 'Croissance'],
+        communicationStyle: 'En cours d\'analyse',
+        relationshipPreferences: 'En cours d\'analyse'
+      };
     }
   }
 
@@ -72,87 +98,168 @@ Réponds UNIQUEMENT en JSON avec cette structure:
     let prompt = '';
 
     if (category === 'animal') {
-      prompt = `Basé sur ce profil: ${profile.personalityType}, trouve l'animal totem correspondant.
+      prompt = `Basé sur ce profil de personnalité: ${profile.personalityType}
 
-Réponds en JSON:
+Traits dominants: ${JSON.stringify(profile.dominantTraits || [])}
+Valeurs: ${JSON.stringify(profile.coreValues || [])}
+
+Trouve l'animal totem qui correspond le mieux à cette personnalité.
+
+Réponds UNIQUEMENT en JSON valide:
 {
   "result": "Nom de l'animal",
   "confidence": 85,
-  "explanation": "Explication de 150 mots",
+  "explanation": "Explication détaillée de 150 mots sur pourquoi cet animal correspond",
   "metadata": {"emoji": "🦅"}
-}`;
-    } else if (category === 'color') {
-      prompt = `Basé sur ce profil: ${profile.personalityType}, trouve la couleur correspondante.
+}
 
-Réponds en JSON:
+IMPORTANT: Réponds UNIQUEMENT avec le JSON, sans texte avant ou après.`;
+    } else if (category === 'color') {
+      prompt = `Basé sur ce profil: ${profile.personalityType}
+
+Traits dominants: ${JSON.stringify(profile.dominantTraits || [])}
+
+Trouve la couleur qui représente le mieux cette personnalité.
+
+Réponds UNIQUEMENT en JSON valide:
 {
   "result": "Nom de la couleur",
   "confidence": 90,
-  "explanation": "Explication de 150 mots",
+  "explanation": "Explication de 150 mots sur la signification de cette couleur pour cette personne",
   "metadata": {"hex": "#FF5733"}
-}`;
-    } else if (category === 'anime' && subcategory === 'naruto') {
-      prompt = `Basé sur ce profil: ${profile.personalityType}, trouve le personnage Naruto correspondant.
+}
 
-Réponds en JSON:
+IMPORTANT: Réponds UNIQUEMENT avec le JSON, sans texte avant ou après.`;
+    } else if (category === 'element') {
+      prompt = `Basé sur ce profil: ${profile.personalityType}
+
+Détermine l'élément naturel (Feu, Eau, Terre, Air) qui correspond.
+
+Réponds UNIQUEMENT en JSON valide:
+{
+  "result": "Nom de l'élément",
+  "confidence": 88,
+  "explanation": "Explication de 150 mots",
+  "metadata": {"symbol": "🔥"}
+}
+
+IMPORTANT: Réponds UNIQUEMENT avec le JSON, sans texte avant ou après.`;
+    } else if (category === 'anime' && subcategory === 'naruto') {
+      prompt = `Basé sur ce profil: ${profile.personalityType}
+
+Traits: ${JSON.stringify(profile.dominantTraits || [])}
+Valeurs: ${JSON.stringify(profile.coreValues || [])}
+
+Trouve le personnage de Naruto qui correspond le mieux.
+Personnages disponibles: Naruto Uzumaki, Sasuke Uchiha, Sakura Haruno, Kakashi Hatake, Shikamaru Nara, Rock Lee, Gaara, Itachi Uchiha, Hinata Hyuga, Jiraiya, Tsunade.
+
+Réponds UNIQUEMENT en JSON valide:
 {
   "result": "Nom du personnage",
   "confidence": 88,
-  "explanation": "Explication de 200 mots",
-  "metadata": {"village": "Konoha", "quote": "Citation"}
-}`;
+  "explanation": "Explication détaillée de 200 mots sur pourquoi ce personnage correspond",
+  "metadata": {"village": "Konoha", "quote": "Citation du personnage"}
+}
+
+IMPORTANT: Réponds UNIQUEMENT avec le JSON, sans texte avant ou après.`;
+    } else if (category === 'anime' && subcategory === 'harry-potter') {
+      prompt = `Basé sur ce profil: ${profile.personalityType}
+
+Valeurs: ${JSON.stringify(profile.coreValues || [])}
+
+Détermine la maison de Poudlard (Gryffondor, Serpentard, Serdaigle, Poufsouffle).
+
+Réponds UNIQUEMENT en JSON valide:
+{
+  "result": "Nom de la maison",
+  "confidence": 90,
+  "explanation": "Discours du Choixpeau de 150 mots expliquant le choix",
+  "metadata": {"colors": ["rouge", "or"], "founder": "Godric Gryffondor"}
+}
+
+IMPORTANT: Réponds UNIQUEMENT avec le JSON, sans texte avant ou après.`;
+    } else {
+      // Association générique
+      prompt = `Basé sur ce profil: ${profile.personalityType}
+
+Catégorie: ${category}
+Sous-catégorie: ${subcategory || 'Aucune'}
+
+Trouve l'association correspondante.
+
+Réponds UNIQUEMENT en JSON valide:
+{
+  "result": "Résultat",
+  "confidence": 85,
+  "explanation": "Explication de 150 mots",
+  "metadata": {}
+}
+
+IMPORTANT: Réponds UNIQUEMENT avec le JSON, sans texte avant ou après.`;
     }
 
     try {
-      const completion = await this.openai.chat.completions.create({
-        model: this.configService.get<string>('OPENAI_MODEL_CHEAP', 'gpt-3.5-turbo'),
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.7,
-        response_format: { type: 'json_object' },
-      });
+      const result = await this.model.generateContent(prompt);
+      const response = await result.response;
+      let text = response.text().trim();
 
-      return JSON.parse(completion.choices[0].message.content);
+      // Nettoyer le texte
+      text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+
+      return JSON.parse(text);
     } catch (error) {
-      this.logger.error('Error generating association:', error);
-      throw error;
+      this.logger.error('Error generating association with Gemini:', error);
+
+      // Fallback
+      return {
+        result: 'En cours...',
+        confidence: 50,
+        explanation: 'Analyse en cours de traitement.',
+        metadata: {}
+      };
     }
   }
 
   async chatWithUser(profile: any, userMessage: string, history: any[]) {
-    const systemPrompt = `Tu es Narcymorph, une IA bienveillante spécialisée dans l'analyse de personnalité.
+    const systemContext = `Tu es Narcymorph, une IA bienveillante spécialisée dans l'analyse de personnalité.
 
 Profil de l'utilisateur: ${profile.personalityType || 'Non analysé'}
 
 Ton rôle:
 - Converser pour approfondir la compréhension de sa personnalité
-- Poser UNE question à la fois
+- Poser UNE question à la fois, claire et ouverte
 - Être empathique et sans jugement
-- Détecter des insights importants`;
+- Détecter des insights importants
 
-    const messages = [
-      { role: 'system', content: systemPrompt },
-      ...history.map((msg) => ({
-        role: msg.role as 'user' | 'assistant',
-        content: msg.content,
-      })),
-      { role: 'user' as const, content: userMessage },
-    ];
+Contexte de la conversation:`;
+
+    // Construire le contexte de conversation
+    let conversationContext = systemContext + '\n\n';
+
+    // Ajouter les derniers messages (max 5 pour ne pas dépasser les limites)
+    const recentHistory = history.slice(-5);
+    recentHistory.forEach((msg) => {
+      conversationContext += `${msg.role === 'user' ? 'Utilisateur' : 'Assistant'}: ${msg.content}\n`;
+    });
+
+    conversationContext += `\nUtilisateur: ${userMessage}\n\nAssistant:`;
 
     try {
-      const completion = await this.openai.chat.completions.create({
-        model: this.configService.get<string>('OPENAI_MODEL_CHEAP', 'gpt-3.5-turbo'),
-        messages,
-        temperature: 0.8,
-        max_tokens: 500,
-      });
+      const result = await this.model.generateContent(conversationContext);
+      const response = await result.response;
+      const text = response.text();
 
       return {
-        message: completion.choices[0].message.content,
-        insights: [], // Could extract insights from conversation
+        message: text,
+        insights: [], // Pourrait être enrichi avec une analyse séparée
       };
     } catch (error) {
-      this.logger.error('Error in chat:', error);
-      throw error;
+      this.logger.error('Error in chat with Gemini:', error);
+
+      return {
+        message: 'Je suis désolé, j\'ai rencontré un problème. Pouvez-vous reformuler votre question ?',
+        insights: [],
+      };
     }
   }
 }
