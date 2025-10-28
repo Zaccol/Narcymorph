@@ -81,7 +81,7 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Nom d'utilisateur</label>
+            <label className="block text-sm font-medium mb-2">Nom d&apos;utilisateur</label>
             <input
               type="text"
               name="username"
@@ -126,7 +126,7 @@ export default function RegisterPage() {
           </div>
 
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Création...' : 'S'inscrire'}
+            {loading ? 'Création...' : 'S\'inscrire'}
           </Button>
         </form>
 
