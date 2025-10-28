@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # PostgreSQL Database
   postgres:
@@ -35,77 +33,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
-  # Backend API (NestJS)
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: narcymorph-backend
-    restart: unless-stopped
-    ports:
-      - "4000:4000"
-    environment:
-      NODE_ENV: development
-      PORT: 4000
-      DATABASE_URL: postgresql://narcymorph:password@postgres:5432/narcymorph?schema=public
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-    env_file:
-      - ./backend/.env
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
-      - ./backend/uploads:/app/uploads
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    command: npm run start:dev
-
-  # Frontend (Next.js)
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: narcymorph-frontend
-    restart: unless-stopped
-    ports:
-      - "3000:3000"
-    environment:
-      NEXT_PUBLIC_API_URL: http://localhost:4000
-      NEXT_PUBLIC_WS_URL: http://localhost:4000
-    env_file:
-      - ./frontend/.env.local
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-      - /app/.next
-    depends_on:
-      - backend
-    command: npm run dev
-
-  # Prisma Studio (Database GUI) - Optional
-  prisma-studio:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: narcymorph-prisma-studio
-    restart: unless-stopped
-    ports:
-      - "5555:5555"
-    environment:
-      DATABASE_URL: postgresql://narcymorph:password@postgres:5432/narcymorph?schema=public
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
-    depends_on:
-      postgres:
-        condition: service_healthy
-    command: npx prisma studio --browser none --port 5555
-    profiles:
-      - dev-tools
 
 volumes:
   postgres_data:
