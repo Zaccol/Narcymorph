@@ -56,7 +56,7 @@ export class PersonalityService {
 
     // Call AI service for detailed analysis
     const analysis = await this.aiService.analyzePersonality({
-      personalityType: profile.personalityType,
+      personalityType: profile.personalityType || '',
       quizResponses: profile.quizResponses as any,
       scores: {
         E_I: profile.extraversionScore,

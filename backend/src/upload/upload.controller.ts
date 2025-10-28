@@ -25,14 +25,14 @@ export class UploadController {
   @ApiConsumes('multipart/form-data')
   @ApiResponse({ status: 201, description: 'Photo uploaded successfully' })
   @ApiResponse({ status: 400, description: 'Invalid file' })
-  async uploadPhoto(@Request() req, @UploadedFile() file: Express.Multer.File) {
+  async uploadPhoto(@Request() req: any, @UploadedFile() file: Express.Multer.File) {
     return this.uploadService.uploadPhoto(req.user.id, file);
   }
 
   @Delete('photo')
   @ApiOperation({ summary: 'Delete profile photo' })
   @ApiResponse({ status: 200, description: 'Photo deleted' })
-  async deletePhoto(@Request() req) {
+  async deletePhoto(@Request() req: any) {
     return this.uploadService.deletePhoto(req.user.id);
   }
 }
