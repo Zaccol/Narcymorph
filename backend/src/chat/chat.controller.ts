@@ -13,21 +13,21 @@ export class ChatController {
   @Post('message')
   @ApiOperation({ summary: 'Send a message to AI' })
   @ApiResponse({ status: 201, description: 'Message sent' })
-  async sendMessage(@Request() req, @Body('content') content: string) {
+  async sendMessage(@Request() req: any, @Body('content') content: string) {
     return this.chatService.sendMessage(req.user.id, content);
   }
 
   @Get('messages')
   @ApiOperation({ summary: 'Get chat history' })
   @ApiResponse({ status: 200, description: 'Messages retrieved' })
-  async getMessages(@Request() req, @Query('limit') limit?: number) {
+  async getMessages(@Request() req: any, @Query('limit') limit?: number) {
     return this.chatService.getMessages(req.user.id, limit);
   }
 
   @Delete('messages')
   @ApiOperation({ summary: 'Clear chat history' })
   @ApiResponse({ status: 200, description: 'History cleared' })
-  async clearHistory(@Request() req) {
+  async clearHistory(@Request() req: any) {
     return this.chatService.clearHistory(req.user.id);
   }
 }

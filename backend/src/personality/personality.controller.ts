@@ -13,21 +13,21 @@ export class PersonalityController {
   @Post('quiz')
   @ApiOperation({ summary: 'Submit personality quiz responses' })
   @ApiResponse({ status: 201, description: 'Quiz submitted successfully' })
-  async submitQuiz(@Request() req, @Body() quizResponses: any) {
+  async submitQuiz(@Request() req: any, @Body() quizResponses: any) {
     return this.personalityService.submitQuiz(req.user.id, quizResponses);
   }
 
   @Post('analyze')
   @ApiOperation({ summary: 'Trigger AI personality analysis' })
   @ApiResponse({ status: 200, description: 'Analysis completed' })
-  async analyzePersonality(@Request() req) {
+  async analyzePersonality(@Request() req: any) {
     return this.personalityService.analyzePersonality(req.user.id);
   }
 
   @Get('profile')
   @ApiOperation({ summary: 'Get personality profile' })
   @ApiResponse({ status: 200, description: 'Profile retrieved' })
-  async getProfile(@Request() req) {
+  async getProfile(@Request() req: any) {
     return this.personalityService.getPersonalityProfile(req.user.id);
   }
 }

@@ -16,7 +16,7 @@ export class AssociationsController {
   @ApiQuery({ name: 'subcategory', required: false, example: 'naruto' })
   @ApiResponse({ status: 201, description: 'Association discovered' })
   async discover(
-    @Request() req,
+    @Request() req: any,
     @Query('category') category: string,
     @Query('subcategory') subcategory?: string,
   ) {
@@ -26,7 +26,7 @@ export class AssociationsController {
   @Get()
   @ApiOperation({ summary: 'Get all associations' })
   @ApiResponse({ status: 200, description: 'Associations retrieved' })
-  async getAll(@Request() req) {
+  async getAll(@Request() req: any) {
     return this.associationsService.getAssociations(req.user.id);
   }
 
@@ -34,7 +34,7 @@ export class AssociationsController {
   @ApiOperation({ summary: 'Get associations by category' })
   @ApiQuery({ name: 'category', example: 'anime' })
   @ApiResponse({ status: 200, description: 'Associations retrieved' })
-  async getByCategory(@Request() req, @Query('category') category: string) {
+  async getByCategory(@Request() req: any, @Query('category') category: string) {
     return this.associationsService.getAssociationsByCategory(req.user.id, category);
   }
 }

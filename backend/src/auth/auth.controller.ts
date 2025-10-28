@@ -26,7 +26,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Login user' })
   @ApiResponse({ status: 200, description: 'Login successful', type: LoginResponseDto })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
-  async login(@Body() loginDto: LoginDto, @Request() req): Promise<LoginResponseDto> {
+  async login(@Body() loginDto: LoginDto, @Request() req: any): Promise<LoginResponseDto> {
     return this.authService.login(req.user);
   }
 
@@ -36,7 +36,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Refresh access token' })
   @ApiResponse({ status: 200, description: 'Token refreshed successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async refresh(@Request() req) {
+  async refresh(@Request() req: any) {
     return this.authService.refreshToken(req.user.id);
   }
 }

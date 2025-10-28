@@ -14,7 +14,7 @@ export class UsersController {
   @ApiOperation({ summary: 'Get current user profile' })
   @ApiResponse({ status: 200, description: 'User profile retrieved' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async getMe(@Request() req) {
+  async getMe(@Request() req: any) {
     return this.usersService.getProfile(req.user.id);
   }
 
@@ -22,7 +22,7 @@ export class UsersController {
   @ApiOperation({ summary: 'Delete current user account' })
   @ApiResponse({ status: 200, description: 'Account deleted' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async deleteAccount(@Request() req) {
+  async deleteAccount(@Request() req: any) {
     return this.usersService.deleteUser(req.user.id);
   }
 }
