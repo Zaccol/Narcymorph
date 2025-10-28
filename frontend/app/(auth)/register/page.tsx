@@ -47,7 +47,7 @@ export default function RegisterPage() {
 
       const { user, accessToken, refreshToken } = response.data;
       setAuth(user, accessToken, refreshToken);
-      router.push('/onboarding');
+      router.push('/dashboard');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Registration failed');
     } finally {
